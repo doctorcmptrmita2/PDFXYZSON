@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aeropdf-backend
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=sqlite:///./aeropdf.db
+      - STORAGE_BASE_DIR=/app/storage
+      - STORAGE_PDF_DIR=/app/storage/pdfs
+      - STORAGE_RENDER_DIR=/app/storage/renders
+      - DEBUG=false
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3001}
+      - FRONTEND_DOMAIN=${FRONTEND_DOMAIN:-}
+    volumes:
+      - backend_storage:/app/storage
+      - backend_db:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - aeropdf-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8001/api}
+    container_name: aeropdf-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8001/api}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - aeropdf-network
+
+volumes:
+  backend_storage:
+    driver: local
+  backend_db:
+    driver: local
+
+networks:
+  aeropdf-network:
+    driver: bridge
+

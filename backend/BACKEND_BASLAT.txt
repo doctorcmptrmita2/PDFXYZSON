@@ -1,0 +1,48 @@
+========================================
+BACKEND'I BASLATMAK ICIN
+========================================
+
+YONTEM 1: Otomatik (EN KOLAY)
+------------------------------
+1. Windows Explorer'da backend klasorune gidin
+2. BASLAT.bat dosyasina CIFT TIKLAYIN
+3. Acilan pencerede bir tusa basin
+4. Backend baslayacak - PENCEREYI KAPATMAYIN!
+
+
+YONTEM 2: Manuel (PowerShell)
+------------------------------
+PowerShell'i acin ve backend klasorune gidin:
+
+cd C:\wamp64\www\PDFXYZSON\backend
+
+Sonra sirasiyla:
+
+1. Virtual environment'i aktif edin:
+   .\.venv\Scripts\Activate.ps1
+
+2. Bagimliliklari yukleyin (ilk kez):
+   pip install -r requirements.txt
+
+3. Backend'i baslatin:
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+
+
+BASARI KONTROLU
+---------------
+Backend basladiginda terminal'de su mesaji gormelisiniz:
+
+INFO:     Uvicorn running on http://0.0.0.0:8001
+INFO:     Application startup complete.
+
+Tarayicida test edin:
+- http://localhost:8001/health
+- http://localhost:8001/docs
+
+
+ONEMLI NOTLAR
+-------------
+1. Backend terminali ACIK KALMALI - Kapatmayin!
+2. Frontend icin YENI bir terminal acin
+3. Backend calisirken frontend baglanabilir
+

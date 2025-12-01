@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://aeropdf.com/sitemap.xml
+
+# Disallow admin/private areas if any
+Disallow: /api/
+Disallow: /editor/
+
