@@ -22,27 +22,58 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 async function handleFetchError(error: unknown, endpoint: string): Promise<never> {
   if (error instanceof TypeError && error.message.includes('fetch')) {
-    throw new Error(
-      `Backend'e bağlanılamıyor. Lütfen backend'in çalıştığından emin olun:\n` +
-      `1. Backend terminalinde: cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8001\n` +
-      `2. Tarayıcıda test edin: http://localhost:8001/health\n` +
-      `3. API URL: ${API_BASE_URL}${endpoint}`
-    );
+    // Check if backend health endpoint is reachable
+    const healthUrl = API_BASE_URL.replace('/api', '/health');
+    try {
+      const healthResponse = await fetch(healthUrl, { 
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include',
+      });
+      if (healthResponse.ok) {
+        // Backend is reachable, but specific endpoint failed - likely CORS or endpoint issue
+        throw new Error(
+          `Backend çalışıyor ancak endpoint'e erişilemiyor:\n` +
+          `Endpoint: ${API_BASE_URL}${endpoint}\n` +
+          `Health Check: ${healthUrl} ✓\n` +
+          `Lütfen endpoint URL'ini ve CORS ayarlarını kontrol edin.\n` +
+          `Tarayıcı konsolunu (F12) kontrol edin.`
+        );
+      }
+    } catch (healthError) {
+      // Backend is not reachable at all
+      throw new Error(
+        `Backend'e bağlanılamıyor. Lütfen backend'in çalıştığından emin olun:\n` +
+        `1. Backend terminalinde: cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8001\n` +
+        `2. Tarayıcıda test edin: http://localhost:8001/health\n` +
+        `3. API URL: ${API_BASE_URL}${endpoint}\n` +
+        `4. Health Check URL: ${healthUrl}\n` +
+        `5. Tarayıcı konsolunu (F12) kontrol edin.`
+      );
+    }
   }
   throw error;
 }
 
 export async function apiGet<T>(endpoint: string): Promise<T> {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
+      mode: 'cors',
       credentials: 'include',
     });
+    
+    if (!response.ok) {
+      console.error(`API Error [${response.status}]: ${url}`, response);
+    }
+    
     return handleResponse<T>(response);
   } catch (error) {
+    console.error('Fetch error:', error, 'Endpoint:', endpoint);
     return handleFetchError(error, endpoint);
   }
 }
@@ -53,6 +84,7 @@ export async function apiPost<T>(
 ): Promise<T> {
   const options: RequestInit = {
     method: 'POST',
+    mode: 'cors',
     credentials: 'include',
   };
 
@@ -66,9 +98,11 @@ export async function apiPost<T>(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url, options);
     return handleResponse<T>(response);
   } catch (error) {
+    console.error('Fetch error:', error, 'Endpoint:', endpoint);
     return handleFetchError(error, endpoint);
   }
 }
@@ -78,23 +112,33 @@ export async function apiPut<T>(
   body: object
 ): Promise<T> {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      mode: 'cors',
       credentials: 'include',
     });
+    
+    if (!response.ok) {
+      console.error(`API Error [${response.status}]: ${url}`, response);
+    }
+    
     return handleResponse<T>(response);
   } catch (error) {
+    console.error('Fetch error:', error, 'Endpoint:', endpoint);
     return handleFetchError(error, endpoint);
   }
 }
 
 export async function apiGetBlob(endpoint: string): Promise<Blob> {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
+      mode: 'cors',
       credentials: 'include',
     });
     if (!response.ok) {
@@ -109,7 +153,7 @@ export async function apiGetBlob(endpoint: string): Promise<Blob> {
     }
     return response.blob();
   } catch (error) {
+    console.error('Fetch error:', error, 'Endpoint:', endpoint);
     return handleFetchError(error, endpoint);
   }
 }
-

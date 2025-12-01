@@ -1,105 +1,104 @@
-# Sorun Giderme Rehberi
+# AeroPdf Editör - Troubleshooting Rehberi
 
-## Frontend Bağlantı Sorunları
+## 🔍 Backend Bağlantı Sorunları
 
-### "localhost:3001 sunucusuyla bağlantı kuramıyor" Hatası
+### Sorun: "Backend'e bağlanılamıyor" hatası alıyorum ama backend çalışıyor
 
-Bu hata genellikle frontend development server'ın çalışmadığı anlamına gelir.
+#### Kontrol Listesi:
 
-#### Çözüm Adımları:
-
-1. **Frontend'in çalışıp çalışmadığını kontrol edin:**
-
-   Terminal/PowerShell'de `frontend` dizinine gidin:
+1. **Backend Durumu Kontrolü**
    ```bash
-   cd frontend
+   # PowerShell'de:
+   curl http://localhost:8001/health
+   # veya tarayıcıda: http://localhost:8001/health
    ```
 
-2. **Development server'ı başlatın:**
-   ```bash
-   npm run dev
+2. **Port Kontrolü**
+   ```powershell
+   netstat -ano | findstr :8001
    ```
+   Port 8001'de LISTENING görünmeli.
 
-3. **Terminal çıktısını kontrol edin:**
-   
-   Şuna benzer bir çıktı görmelisiniz:
-   ```
-   VITE v5.x.x  ready in xxx ms
+3. **CORS Kontrolü**
+   - Backend terminalinde CORS log'larını kontrol edin
+   - Frontend'in origin'i CORS listesinde olmalı
+   - Varsayılan: `http://localhost:3001`
 
-   ➜  Local:   http://localhost:3001/
-   ➜  Network: http://192.168.x.x:3001/
-   ```
+4. **Tarayıcı Konsolu (F12)**
+   - Network sekmesinde istekleri kontrol edin
+   - CORS hatası var mı?
+   - Request URL doğru mu?
 
-4. **Port numarasını kontrol edin:**
-   
-   Eğer port 3001 kullanılıyorsa, Vite otomatik olarak farklı bir port kullanacaktır (örn: 3002, 3003). Terminal'de gösterilen gerçek portu kullanın.
+5. **API URL Kontrolü**
+   - Frontend console'da: `console.log('API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)`
+   - Beklenen: `http://localhost:8001/api`
 
-#### Yaygın Sorunlar:
+### Çözümler:
 
-**Problem: "npm: command not found"**
-- **Çözüm**: Node.js yüklü değil. [Node.js](https://nodejs.org/) v20 veya üzeri sürümü yükleyin.
+#### Çözüm 1: Backend'i Yeniden Başlat
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+```
 
-**Problem: "Cannot find module" hataları**
-- **Çözüm**: Bağımlılıklar yüklenmemiş. Şunu çalıştırın:
-  ```bash
-  cd frontend
-  npm install
-  ```
+#### Çözüm 2: CORS Ayarlarını Kontrol Et
+`backend/app/main.py` dosyasında CORS origins listesini kontrol edin:
+```python
+allowed_origins = [
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
+```
 
-**Problem: Port zaten kullanılıyor**
-- **Çözüm**: Vite otomatik olarak bir sonraki boş portu kullanacaktır. Terminal çıktısındaki portu kullanın veya `vite.config.ts` dosyasında farklı bir port belirtin.
+#### Çözüm 3: Frontend'i Yeniden Başlat
+```bash
+cd frontend
+npm run dev
+```
 
-**Problem: "EADDRINUSE" hatası**
-- **Çözüm**: Port başka bir uygulama tarafından kullanılıyor. O uygulamayı kapatın veya `vite.config.ts`'de farklı bir port kullanın.
+#### Çözüm 4: Tarayıcı Cache'ini Temizle
+- Ctrl+Shift+Delete
+- Cache ve cookies'i temizle
+- Sayfayı hard refresh: Ctrl+F5
 
-## Backend Bağlantı Sorunları
+## 🐛 Yaygın Hatalar
 
-### Backend'e bağlanamıyorum
+### 405 Method Not Allowed
+**Sebep**: Endpoint yanlış HTTP metodu kullanıyor.
 
-1. **Backend'in çalışıp çalışmadığını kontrol edin:**
-   ```bash
-   cd backend
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
-   ```
+**Çözüm**: 
+- Word endpoint'i için PUT kullanın, GET değil
+- Word bilgisi text map'ten alınmalı
 
-2. **Tarayıcıda test edin:**
-   - `http://localhost:8001/health` - "healthy" dönmeli
-   - `http://localhost:8001/docs` - API dokümantasyonu açılmalı
+### CORS Error
+**Sebep**: Backend frontend'in origin'ine izin vermiyor.
 
-3. **CORS hatası alıyorsanız:**
-   - Backend'in `app/main.py` dosyasında frontend portunun CORS listesinde olduğundan emin olun.
+**Çözüm**:
+1. Backend'de CORS origins listesine frontend URL'ini ekleyin
+2. Backend'i yeniden başlatın
 
-## Docker Sorunları
+### Network Error
+**Sebep**: Backend çalışmıyor veya erişilemiyor.
 
-### Container'lar başlamıyor
+**Çözüm**:
+1. Backend process'ini kontrol edin
+2. Port çakışması var mı kontrol edin
+3. Firewall ayarlarını kontrol edin
 
-1. **Docker'ın çalıştığından emin olun**
+## 📝 Debug İpuçları
 
-2. **Logları kontrol edin:**
-   ```bash
-   docker-compose logs backend
-   docker-compose logs frontend
-   ```
+1. **Backend Logları**: Backend terminalinde hata mesajlarını kontrol edin
+2. **Frontend Console**: F12 → Console sekmesi
+3. **Network Tab**: F12 → Network sekmesi → İstekleri inceleyin
+4. **API Test**: Postman veya curl ile endpoint'leri test edin
 
-3. **Yeniden build edin:**
-   ```bash
-   docker-compose down
-   docker-compose up --build
-   ```
+## ✅ Hızlı Test
 
-### Port çakışması
+```powershell
+# Backend health check
+curl http://localhost:8001/health
 
-Eğer portlar zaten kullanılıyorsa, `docker-compose.yml` dosyasındaki port mapping'leri değiştirin.
-
-## Genel İpuçları
-
-1. **Her zaman terminal çıktılarını kontrol edin** - Hata mesajları genellikle orada görünür.
-
-2. **Port numaralarını doğrulayın** - Frontend ve backend'in farklı portlarda çalıştığından emin olun.
-
-3. **Firewall ayarlarını kontrol edin** - Windows Firewall veya antivirüs yazılımı bağlantıları engelliyor olabilir.
-
-4. **Node.js ve Python sürümlerini kontrol edin:**
-   - Node.js: `node --version` (v20+ olmalı)
-   - Python: `python --version` (v3.11+ olmalı)
-
+# API endpoint test
+curl http://localhost:8001/api/pdfs/{uuid}/pages/1/text-map
+```

@@ -36,7 +36,11 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Log CORS configuration for debugging
+print(f"CORS allowed origins: {[origin.strip() for origin in allowed_origins]}")
 
 # Include routers
 app.include_router(pdfs.router, prefix="/api")
